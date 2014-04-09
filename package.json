@@ -1,0 +1,17 @@
+{
+  "name": "aviation-info",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "request": "~2.34.0",
+    "cheerio": "0.15.0",
+    "async": "~0.7.0",
+    "underscore": "~1.6.0"
+  }
+}
