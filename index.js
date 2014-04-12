@@ -4,6 +4,7 @@ var cheerio = require('cheerio');
 var async = require('async');
 var _ = require('underscore');
 var fs = require('fs');
+var formatjson = require('format-json');
 
 var years = [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013];
 
@@ -33,12 +34,21 @@ function parseAccidentPage(url, callback) {
   });
 }
 
-function parseYearPage(year, callback) {
+function allAccidentsUrlsPerYear(year, callback) {
 
-  var url = 'http://aviation-safety.net/database/dblist.php?Year=';
-  var yearURL = url+year;
+  getAllYearPagesUrls(year, function(error, urls) {
+    var accidentsUrls;
 
-  request(yearURL, function(error, response, html){
+    async.map(urls, allAccidentsURLsOnPage, function(error, accidents){
+      accidentsUrls = _.flatten(accidents);
+      callback(null, accidentsUrls);
+    })
+  });
+}
+
+
+function allAccidentsURLsOnPage(url, callback) {
+  request(url, function(error, response, html){
     if (error) {
       callback(error);
     } else {
@@ -61,7 +71,7 @@ function parseYearPage(year, callback) {
 
 function accidentsPerYear(accidentYear, callback) {
 
-  parseYearPage(accidentYear, function(error, allUrls) {
+  allAccidentsUrlsPerYear(accidentYear, function(error, allUrls) {
 
     if (error) {
       callback(error);
@@ -74,13 +84,47 @@ function accidentsPerYear(accidentYear, callback) {
 }
 
 
-async.map(years, accidentsPerYear, function(error, accidents){
-  var allAccidents = _.flatten(accidents);
+function getAllYearPagesUrls(year, callback) {
 
-  var allAccidentsString = JSON.stringify(allAccidents);
+  var url = 'http://aviation-safety.net/database/dblist.php?Year=';
+  var yearURL = url+year;
 
-  fs.writeFile('accidents.json', allAccidentsString, function(err) {
-    if (err) throw err;
-    console.log('Saved!');
+  request(yearURL, function(error, response, html){
+    if (error) {
+      callback(error);
+    } else {
+      var $ = cheerio.load(html);
+      var allPagesUrls = [yearURL];
+
+      $('.pagenumbers').first().find('a').each(function(i, elem) {
+
+        var href = $(this).attr('href');
+        var pageUrl = 'http://aviation-safety.net/database/dblist.php'+href;
+
+        allPagesUrls.push(pageUrl);
+
+      });
+
+      callback(null, allPagesUrls);
+    }
   });
-});
+}
+
+
+function createDataFile(years, fileName) {
+
+  async.map(years, accidentsPerYear, function(error, accidents){
+    var allAccidents = _.flatten(accidents);
+
+    var allAccidentsString = formatjson.diffy(allAccidents);
+
+    fs.writeFile(fileName, allAccidentsString, function(err) {
+      if (err) throw err;
+      console.log('Saved!');
+    });
+  });
+}
+
+
+
+createDataFile(years, 'accidents.json');

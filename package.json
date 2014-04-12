@@ -12,6 +12,7 @@
     "request": "~2.34.0",
     "cheerio": "0.15.0",
     "async": "~0.7.0",
-    "underscore": "~1.6.0"
+    "underscore": "~1.6.0",
+    "format-json": "~1.0.3"
   }
 }
